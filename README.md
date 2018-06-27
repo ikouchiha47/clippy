@@ -1,6 +1,8 @@
 ## Clippy
 
-keeps a history of previous pastes.
+keeps a history of previous pastes. shows clipboard history in last used first
+
+![clippy](showcase/clippy.png  "Copy pastes in action")
 
 Build
 -------
