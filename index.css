@@ -1,0 +1,54 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #393939
+}
+
+.search {
+  height: 50px;
+}
+
+#search_term {
+  width: 100%;
+  height: 100%;
+  background: #222;
+  border: none;
+  padding-left: 10px;
+  font-size: 20px;
+  color: #ddd;
+  box-sizing: border-box;
+}
+
+#search_term:focus {
+  outline-width: 0;
+}
+
+.paste {
+  display: flex;
+  border-bottom: 1px solid #aaa;
+  color: #ccc;
+  font-family: sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: default;
+}
+
+.paste .shortcut, .paste .text {
+  padding: 10px;
+}
+  
+.paste .text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.paste .shortcut {
+  flex: 0 0 auto;
+}
+
+[data-selected=true] {
+  background-color: #ffee69;
+  color: #000;
+}

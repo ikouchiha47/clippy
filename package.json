@@ -1,0 +1,36 @@
+{
+  "name": "clippy",
+  "version": "1.1.0",
+  "main": "index.js",
+  "description": "Clipboard History",
+  "author": {
+    "name": "ikouchiha47"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "build"
+  },
+  "build": {
+    "appId": "com.clippy.app",
+    "win": {
+      "icon": "clipboard.png",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": false
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Development"
+    },
+    "mac": {
+      "target": "dmg"
+    }
+  },
+  "devDependencies": {
+    "electron": "^2.0.3",
+    "electron-builder": "^20.17.0",
+    "electron-packager": "^12.1.0"
+  }
+}
