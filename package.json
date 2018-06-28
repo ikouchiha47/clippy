@@ -3,18 +3,21 @@
   "version": "1.1.0",
   "main": "index.js",
   "description": "Clipboard History",
+  "repository": "https://github.com/ikouchiha47/clippy",
   "author": {
     "name": "ikouchiha47"
   },
   "scripts": {
     "start": "electron .",
-    "dist": "build"
+    "dist": "build",
+    "release": "build"
   },
   "build": {
     "appId": "com.clippy.app",
     "win": {
       "icon": "clipboard.png",
-      "target": "nsis"
+      "target": "nsis",
+      "publish": ["github"]
     },
     "nsis": {
       "oneClick": false,
@@ -22,10 +25,12 @@
     },
     "linux": {
       "target": "AppImage",
-      "category": "Development"
+      "category": "Development",
+      "publish": ["github"]
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "publish": ["github"]
     }
   },
   "devDependencies": {
