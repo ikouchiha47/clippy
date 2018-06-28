@@ -18,14 +18,14 @@ app.on("ready", () => {
   createWindow();
 
   const ret1 = globalShortcut.register("Control+Space", () => {
-    window.isVisible() ? window.hide() : showWindow();
+    if(window.isVisible()) {
+      window.hide()
+    } else {
+      showWindow()
+    };
   });
 
-  const ret2 = globalShortcut.register("Escape", () => {
-    window.isVisible() ? window.hide() : "";
-  });
-
-  if (!ret1 || !ret2) {
+  if (!ret1) {
     console.log("registration failed");
   }
 });
@@ -141,6 +141,10 @@ const createWindow = () => {
 
   ipcMain.on("copy-data", (event, text) => {
     return clipboard.writeText(text);
+  });
+
+  ipcMain.on("hide-window", () => {
+    if(window && window.isVisible()) window.hide();
   });
 
   ipcMain.on("search-data", (event, text) => {

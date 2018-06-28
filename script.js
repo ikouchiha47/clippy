@@ -92,6 +92,11 @@ window.onkeydown = function(e) {
   keycode = Number(keycode);
   keymap[keycode] = true;
   
+  if(keycode == 27) {
+    keymap = { seq: [] };
+    ipc.send("hide-window");
+    return
+  }
 
   if([38, 40].includes(keycode)) {
     keymap = { seq: [] }
