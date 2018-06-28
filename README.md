@@ -16,3 +16,4 @@ Usage
 - Navigation with arrow keys
 - Ctrl/Cmd + number to copy directly
 - or, navigate to and press enter to copy
+- Right Click to Quit
