@@ -19,3 +19,8 @@ Usage
 - Ctrl/Cmd + number to copy directly
 - or, navigate to and press enter to copy
 - Right Click to Quit
+
+Downloads
+------------
+- [MacOSx](https://github.com/ikouchiha47/clippy/releases/download/untagged-88fd5eaa03517decde0a/clippy-1.1.0.dmg)
+- [Linux](https://github.com/ikouchiha47/clippy/releases/download/untagged-88fd5eaa03517decde0a/clippy-1.1.0-x86_64.AppImage)
