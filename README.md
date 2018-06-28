@@ -22,5 +22,7 @@ Usage
 
 Downloads
 ------------
-- [MacOSx](https://github.com/ikouchiha47/clippy/releases/download/untagged-88fd5eaa03517decde0a/clippy-1.1.0.dmg)
-- [Linux](https://github.com/ikouchiha47/clippy/releases/download/untagged-88fd5eaa03517decde0a/clippy-1.1.0-x86_64.AppImage)
+- [MacOsx](https://github.com/ikouchiha47/clippy/releases/download/v1.2.0/clippy-1.2.0.dmg)
+- [Linux](https://github.com/ikouchiha47/clippy/releases/download/v1.2.0/clippy-1.2.0-x86_64.AppImage)
+- [Windows](https://github.com/ikouchiha47/clippy/releases/download/v1.2.0/clippy-setup-1.2.0.exe)
+
