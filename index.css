@@ -6,6 +6,10 @@ html, body {
 
 .search {
   height: 50px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 #search_term {
@@ -23,6 +27,10 @@ html, body {
   outline-width: 0;
 }
 
+.content {
+  margin-top: 50px;
+}
+
 .paste {
   display: flex;
   border-bottom: 1px solid #aaa;
@@ -36,7 +44,7 @@ html, body {
 .paste .shortcut, .paste .text {
   padding: 10px;
 }
-  
+
 .paste .text {
   flex: 1 1 auto;
   overflow: hidden;

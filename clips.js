@@ -1,6 +1,36 @@
 const CACHE_SIZE = 99
 let DATA = [];
 
+let Sort = {
+  quick: function(arr, left, right) {
+    if(left < right) {
+      let pi = Sort.partition(arr, left, right)
+
+      this.quick(arr, left, pi - 1)
+      this.quick(arr, pi + 1, right)
+    }
+  },
+
+  partition: function(arr, left, right) {
+    let pivot = arr[right]
+    let i, trace = left;
+
+    for(i = left; i < right; i++) {
+      if(arr[i].time >= pivot.time) {
+        [arr[i], arr[trace]] = [arr[trace], arr[i]];
+        trace += 1
+      }
+    }
+
+    [arr[right], arr[trace]] = [arr[trace], arr[right]];
+    return trace;
+  },
+}
+
+function trace() {
+  console.log(new Error().stack)
+}
+
 function quote(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 }
@@ -13,25 +43,25 @@ function findWithIndex(arr, cb) {
   return { index: -1, value: null }
 }
 
-function putInCache(text) {
+function putInCache(text, shouldUpdate) {
   let data = getFromCache({text: text})
 
-  if(data && data.text == text ) {
+  if( data && data.text == text ) {
     data.time = +(new Date());
-    rearrangeData()
+    if(shouldUpdate) rearrangeData()
     return DATA;
   }
 
-  DATA = [{text: text, time: +(new Date())}].concat(DATA)
-  rearrangeData();
+  DATA = [{ text: text, time: +(new Date()) }].concat(DATA)
+  if(shouldUpdate) rearrangeData();
 
   return DATA;
 }
 
 function rearrangeData() {
-  DATA = DATA.sort((p, n) => n.time - p.time)
-  if(DATA.length > CACHE_SIZE) DATA.pop();
+  Sort.quick(DATA, 0, DATA.length - 1)
 
+  if(DATA.length > CACHE_SIZE) DATA.pop();
   return DATA
 }
 
@@ -45,18 +75,12 @@ function getByText(text) {
   let { index, value } = findWithIndex(DATA, (value) => value.text == text)
   if(index < 0) return { index: index }
 
-  DATA[index]["time"] = +(new Date())
-  rearrangeData();
-
   return value
 }
 
 function getByIndex(id) {
   let { index, value } = findWithIndex(DATA, (value, index) => index == id)
   if(index < 0) return { index: index }
-
-  DATA[index]["time"] = +(new Date())
-  rearrangeData();
 
   return value
 }

@@ -11,6 +11,8 @@ const watchClipB = require("./watchclipboard");
 const { put, search, sort, all } = require("./clips");
 const iconPath = path.join(__dirname, "rclipboard.png");
 
+let dataCopied = false; // is data copied from app
+
 app.dock.hide();
 
 app.on("ready", () => {
@@ -93,35 +95,56 @@ const createWindow = () => {
     show: false,
     frame: false,
     webPreferences: {
-      backgroundThrottling: false
+      backgroundThrottling: false,
+      devTools: true
     }
   });
 
+  window.setVisibleOnAllWorkspaces(true)
   window.loadURL(`file://${path.join(__dirname, "index.html")}`);
-  //window.webContents.openDevTools();
+  window.webContents.openDevTools({ mode: 'detach'});
 
   // Hide the window when it loses focus
-
   window.on("blur", () => {
     if (!window.webContents.isDevToolsOpened()) {
       window.hide();
     }
   });
 
+  window.webContents.on("dom-ready", () => {
+    pastes = sort();
+
+    window.webContents.send("clipboard-data", {
+      pastes: pastes.map(v => v.text)
+    });
+  })
+
+  // on finished loading load up data
   window.webContents.on("did-finish-load", () => {
     pastes = all();
+
     window.webContents.send("clipboard-data", {
       pastes: pastes.map(v => v.text)
     });
 
+    // if existing watcher, stop it
     if (watcher) watcher.stop();
 
+    // start watching for changes to clipboard data
+    // when a new data comes in from copy to clipboard
+    // load up all data sorted by time
+    // and send data to frontend for render
     watcher = watchClipB({
       onTextChange: text => {
         text = text.trim();
-        if (text) put(text);
+        if (text) {
+          // don't update cache if text copied from app
+          put(text, !dataCopied);
+          dataCopied = false
+        }
 
         pastes = all();
+
         window.webContents.send("clipboard-data", {
           pastes: pastes.map(v => v.text)
         });
@@ -130,8 +153,12 @@ const createWindow = () => {
 
     setInterval(() => {
       let data = sort();
+
       if (pastes.length && pastes[0].time != data[0].time) {
         pastes = data;
+
+        if(window.isVisible()) return;
+
         window.webContents.send("clipboard-data", {
           pastes: pastes.map(v => v.text)
         });
@@ -140,6 +167,7 @@ const createWindow = () => {
   });
 
   ipcMain.on("copy-data", (event, text) => {
+    dataCopied = true;
     return clipboard.writeText(text);
   });
 

@@ -17,7 +17,9 @@
     "win": {
       "icon": "clipboard.png",
       "target": "nsis",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -26,11 +28,15 @@
     "linux": {
       "target": "AppImage",
       "category": "Development",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     },
     "mac": {
       "target": "dmg",
-      "publish": ["github"]
+      "publish": [
+        "github"
+      ]
     }
   },
   "devDependencies": {
