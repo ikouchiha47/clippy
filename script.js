@@ -1,4 +1,6 @@
 const ipc = require('electron').ipcRenderer;
+const shell = require('electron').shell
+
 let pastes = [];
 let selected = 1; // used to determine which element to highlight
 let keymap = { seq: [] }
@@ -8,6 +10,12 @@ ipc.on('clipboard-data', function (event, store) {
   pastes = store.pastes;
   //console.log(pastes);
   renderPaste(store);
+})
+
+ipc.on('update-available', function(event, available) {
+  if(available) {
+    $('.update-available').style.display = 'block';
+  }
 })
 
 function $(el, props = {}) {
@@ -31,7 +39,8 @@ function $(el, props = {}) {
 
     return d;
   } else if(el.startsWith(".")) {
-    return document.querySelectorAll(el);
+    let els = document.querySelectorAll(el);
+    return els.length == 1 ? els[0] : els
   } else if(el.startsWith("#")) {
     return document.querySelector(el)
   }
@@ -223,5 +232,10 @@ window.onload = () => {
     }
 
     timeout = window.requestAnimationFrame(fn)
+  }
+
+  $('.update-available').onclick = function(e) {
+    let href = e.target.dataset.href;
+    if(href) shell.openExternal(href)
   }
 }

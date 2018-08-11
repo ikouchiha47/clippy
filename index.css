@@ -29,13 +29,27 @@ html, body {
 
 .content {
   margin-top: 50px;
+  text-align: center;
+  font-family: 'Ubuntu', sans-serif;
+}
+
+.update-available {
+  color: #9bfb08;
+  font-size: 13px;
+  font-family: 'Titillium', serif;
+  cursor: pointer;
+  display: none;
+  transition: display 0s, opacity 0.5s linear;
+}
+
+#pastes {
+    text-align: left;
 }
 
 .paste {
   display: flex;
   border-bottom: 1px solid #aaa;
   color: #ccc;
-  font-family: sans-serif;
   font-weight: 500;
   font-size: 13px;
   cursor: default;
@@ -54,6 +68,7 @@ html, body {
 
 .paste .shortcut {
   flex: 0 0 auto;
+  min-width: 35px;
 }
 
 [data-selected=true] {

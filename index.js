@@ -4,7 +4,8 @@ const {
   ipcMain,
   Tray,
   clipboard,
-  globalShortcut
+  globalShortcut,
+  session
 } = require("electron");
 const path = require("path");
 const watchClipB = require("./watchclipboard");
@@ -16,6 +17,10 @@ let dataCopied = false; // is data copied from app
 app.dock.hide();
 
 app.on("ready", () => {
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({responseHeaders: `default-src 'none'`})
+  })
+
   createTray();
   createWindow();
 
@@ -75,6 +80,42 @@ const toggleWindow = () => {
   }
 };
 
+const versionToInt = (version) => {
+   return parseInt(version.split('.').join(''))
+}
+
+const checkForUpdates = (version) => {
+  const { net } = require('electron');
+  const url = "https://raw.githubusercontent.com/ikouchiha47/clippy/master/package.json"
+  const req = net.request(url);
+
+  req.on('error', (e) => {
+    console.log(e)
+  })
+
+  req.on('response', resp => {
+    let body = "";
+    resp.on('data', chunk => {
+      body += chunk.toString()
+    })
+
+    resp.on('end', () => {
+      try {
+        let json = JSON.parse(body)
+        let remoteVersion = json.version
+
+        if(versionToInt(version) < versionToInt(json.version)) {
+          window.webContents.send('update-available', true)
+        }
+      } catch(e) {
+        console.log("failed json parse", e)
+      }
+    })
+  })
+
+  req.end()
+}
+
 const showWindow = () => {
   const position = getWindowPosition();
   window.setPosition(position.x, position.y, false);
@@ -127,6 +168,7 @@ const createWindow = () => {
       pastes: pastes.map(v => v.text)
     });
 
+    checkForUpdates(app.getVersion());
     // if existing watcher, stop it
     if (watcher) watcher.stop();
 
@@ -190,3 +232,7 @@ const createWindow = () => {
     });
   });
 };
+
+process.on('uncaughtException', function (error) {
+    console.log(error)
+})
