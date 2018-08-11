@@ -137,13 +137,14 @@ const createWindow = () => {
     frame: false,
     webPreferences: {
       backgroundThrottling: false,
-      devTools: true
+      //devTools: true
     }
   });
 
   window.setVisibleOnAllWorkspaces(true)
   window.loadURL(`file://${path.join(__dirname, "index.html")}`);
-  window.webContents.openDevTools({ mode: 'detach'});
+  
+  //window.webContents.openDevTools({ mode: 'detach'});
 
   // Hide the window when it loses focus
   window.on("blur", () => {

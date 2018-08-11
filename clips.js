@@ -1,18 +1,6 @@
 const CACHE_SIZE = 99
 let DATA = [];
 
-DATA = (function() {
-  let data = []
-
-  for(let i = 0; i < 30; i++) {
-    let time = Number(new Date()) + 60000 * i
-    data.push({ text: `random_text_${i}`, time })
-  }
-
-  return data
-})()
-
-
 let Sort = {
   quick: function(arr, left, right) {
     if(left < right) {
