@@ -14,7 +14,8 @@ const iconPath = path.join(__dirname, "rclipboard.png");
 
 let dataCopied = false; // is data copied from app
 
-app.dock.hide();
+if(process.platform == "darwin")
+    app.dock && app.dock.hide();
 
 app.on("ready", () => {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -135,6 +136,7 @@ const createWindow = () => {
     transparent: true,
     show: false,
     frame: false,
+    skipTaskbar: true,
     webPreferences: {
       backgroundThrottling: false,
       //devTools: true
