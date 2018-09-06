@@ -3,7 +3,7 @@ let DATA = [];
 
 function testData() {
     for(let i = 0; i < 50 ; i++) {
-        DATA.push({text: `Copytext ${i}` })
+        DATA.push({text: `Copytext ${i}`, time: (+ new Date()) + (i * 10) })
     }
 }
 
@@ -66,7 +66,15 @@ function putInCache(text, shouldUpdate) {
   return DATA;
 }
 
+function putBulkInCache(data) {
+  DATA = data;
+  rearrangeData()
+  return DATA
+}
+
 function rearrangeData() {
+  if(!DATA.length) return DATA
+
   Sort.quick(DATA, 0, DATA.length - 1)
 
   if(DATA.length > CACHE_SIZE) DATA.pop();
@@ -120,5 +128,7 @@ module.exports = {
   get: getFromCache,
   sort: rearrangeData,
   all: getAllData,
-  remove: removeFromCache
+  remove: removeFromCache,
+  putAll: putBulkInCache,
+
 }

@@ -9,7 +9,7 @@ const {
 } = require("electron");
 const path = require("path");
 const watchClipB = require("./watchclipboard");
-const { put, search, sort, all } = require("./clips");
+const { put, search, sort, all, putAll } = require("./clips");
 const iconPath = path.join(__dirname, "rclipboard.png");
 
 let dataCopied = false; // is data copied from app
@@ -36,9 +36,12 @@ app.on("ready", () => {
   if (!ret1) {
     console.log("registration failed");
   }
+
+  loadClipBoardHistoryFromFile();
 });
 
 app.on("will-quit", () => {
+  saveClipBoardHistoryToFile(all());
   globalShortcut.unregister("Control+Space");
   globalShortcut.unregisterAll();
 });
@@ -219,8 +222,9 @@ const createWindow = () => {
     dataCopied = true;
     clipboard.writeText(text);
     window.webContents.send("copied-data", true);
+
     setTimeout(() => {
-        app && app.hide()
+      app && app.hide()
     }, 300)
   });
 
@@ -243,6 +247,37 @@ const createWindow = () => {
     });
   });
 };
+
+function saveClipBoardHistoryToFile(data = []) {
+  let dir = require('os').homedir()
+  let writeFileSync = require('fs').writeFileSync
+  let path = `${dir}/.config/clippypastes`
+
+  if(data.length) writeFileSync(path, JSON.stringify(data), { encoding: 'utf8', mode: 0o600 })
+}
+
+function loadClipBoardHistoryFromFile() {
+  let dir = require('os').homedir()
+  let readFile = require('fs').readFile
+  let path = `${dir}/.config/clippypastes`
+
+  readFile(path, 'utf8', (err, data) => {
+    if(err) {
+      console.log(err);
+      return
+    }
+
+    try {
+      let pastes = putAll(JSON.parse(data))
+
+      window.webContents.send("clipboard-data", {
+        pastes: pastes.map(v => v.text)
+      });
+    } catch(e) {
+      console.log("Data Corrupted")
+    }
+  })
+}
 
 process.on('uncaughtException', function (error) {
     console.log(error)
