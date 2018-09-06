@@ -1,6 +1,14 @@
 const CACHE_SIZE = 99
 let DATA = [];
 
+function testData() {
+    for(let i = 0; i < 50 ; i++) {
+        DATA.push({text: `Copytext ${i}` })
+    }
+}
+
+//testData();
+
 let Sort = {
   quick: function(arr, left, right) {
     if(left < right) {

@@ -18,6 +18,14 @@ ipc.on('update-available', function(event, available) {
   }
 })
 
+ipc.on('copied-data', function(event, copied) {
+    if(copied) {
+        $('#copied-confirmation').classList.add('visible')
+        setTimeout(() => {
+            $('#copied-confirmation').classList.remove('visible')
+        }, 100)
+    }
+})
 function $(el, props = {}) {
   let rx = /<([^/*]+)\/?>/;
 

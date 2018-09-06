@@ -103,7 +103,6 @@ const checkForUpdates = (version) => {
     resp.on('end', () => {
       try {
         let json = JSON.parse(body)
-        let remoteVersion = json.version
 
         if(versionToInt(version) < versionToInt(json.version)) {
           window.webContents.send('update-available', true)
@@ -139,21 +138,27 @@ const createWindow = () => {
     skipTaskbar: true,
     webPreferences: {
       backgroundThrottling: false,
-      //devTools: true
+        devTools: true
     }
   });
 
   window.setVisibleOnAllWorkspaces(true)
   window.loadURL(`file://${path.join(__dirname, "index.html")}`);
-  
-  //window.webContents.openDevTools({ mode: 'detach'});
+
+  window.webContents.openDevTools({ mode: 'detach'});
 
   // Hide the window when it loses focus
   window.on("blur", () => {
     if (!window.webContents.isDevToolsOpened()) {
       window.hide();
+      // hide the app to bring the focus back to main window
+      app && app.hide()
     }
   });
+
+  window.on('show', () => {
+    checkForUpdates(app.getVersion());
+  })
 
   window.webContents.on("dom-ready", () => {
     pastes = sort();
@@ -171,7 +176,6 @@ const createWindow = () => {
       pastes: pastes.map(v => v.text)
     });
 
-    checkForUpdates(app.getVersion());
     // if existing watcher, stop it
     if (watcher) watcher.stop();
 
@@ -213,7 +217,11 @@ const createWindow = () => {
 
   ipcMain.on("copy-data", (event, text) => {
     dataCopied = true;
-    return clipboard.writeText(text);
+    clipboard.writeText(text);
+    window.webContents.send("copied-data", true);
+    setTimeout(() => {
+        app && app.hide()
+    }, 300)
   });
 
   ipcMain.on("hide-window", () => {
