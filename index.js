@@ -1,18 +1,19 @@
 const {
   app,
+  dialog,
   BrowserWindow,
-  ipcMain,
   Tray,
+  Menu,
+  MenuItem,
+  ipcMain,
   clipboard,
   globalShortcut,
   session
 } = require("electron");
 const path = require("path");
-const watchClipB = require("./watchclipboard");
-const { put, search, sort, all, putAll } = require("./clips");
+const components = require("./components")
+const { all, putAll, sort, reset } = require("./clips");
 const iconPath = path.join(__dirname, "rclipboard.png");
-
-let dataCopied = false; // is data copied from app
 
 if(process.platform == "darwin")
     app.dock && app.dock.hide();
@@ -50,10 +51,48 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
+const confirm = (message) => {
+  return dialog.showMessageBox(
+    window,
+    {
+      type: "question",
+      buttons: ["No", "Yes"],
+      title: "Confirm Clear All Cache",
+      message: message
+    });
+}
+
+const createMenu = () => {
+  let actions = [
+    {
+      label: 'Close',
+      click() {
+        app && app.quit()
+      }
+    },
+    {
+      label: 'Clear All',
+      click() {
+        if(confirm("Are you Sure")) {
+          window.webContents.send('clipboard-data', {
+            pastes: reset(true)
+          });
+          saveClipBoardHistoryToFile([])
+        }
+      }
+    }
+  ]
+  const menu = components.CreateMenu(Menu, MenuItem, app, actions)
+
+  menu.popup({ window: window })
+}
+
 const createTray = () => {
   tray = new Tray(iconPath);
 
-  tray.on("right-click", () => { app && app.quit() });
+  //tray.on("right-click", () => { app && app.quit() });
+  tray.on("right-click", createMenu);
+
   tray.on("double-click", toggleWindow);
   tray.on("click", function(event) {
     toggleWindow();
@@ -127,125 +166,23 @@ const showWindow = () => {
 };
 
 const createWindow = () => {
-  let watcher;
-  let pastes = [];
+  window = components.CreateWindow(
+    app,
+    BrowserWindow,
+    ipcMain,
+    clipboard,
+  )
 
-  window = new BrowserWindow({
-    width: 300,
-    height: 450,
-    fullscreenable: false,
-    resizable: false,
-    transparent: true,
-    show: false,
-    frame: false,
-    skipTaskbar: true,
-    webPreferences: {
-      backgroundThrottling: false,
-        devTools: true
-    }
-  });
-
-  window.setVisibleOnAllWorkspaces(true)
   window.loadURL(`file://${path.join(__dirname, "index.html")}`);
-
-  window.webContents.openDevTools({ mode: 'detach'});
-
-  // Hide the window when it loses focus
-  window.on("blur", () => {
-    if (!window.webContents.isDevToolsOpened()) {
-      window.hide();
-      // hide the app to bring the focus back to main window
-      app && app.hide()
-    }
-  });
-
   window.on('show', () => {
+    let pastes = sort();
+
+    window.webContents.send("clipboard-data", {
+      pastes: pastes.map(v => v.text)
+    });
+
     checkForUpdates(app.getVersion());
   })
-
-  window.webContents.on("dom-ready", () => {
-    pastes = sort();
-
-    window.webContents.send("clipboard-data", {
-      pastes: pastes.map(v => v.text)
-    });
-  })
-
-  // on finished loading load up data
-  window.webContents.on("did-finish-load", () => {
-    pastes = all();
-
-    window.webContents.send("clipboard-data", {
-      pastes: pastes.map(v => v.text)
-    });
-
-    // if existing watcher, stop it
-    if (watcher) watcher.stop();
-
-    // start watching for changes to clipboard data
-    // when a new data comes in from copy to clipboard
-    // load up all data sorted by time
-    // and send data to frontend for render
-    watcher = watchClipB({
-      onTextChange: text => {
-        text = text.trim();
-        if (text) {
-          // don't update cache if text copied from app
-          put(text, !dataCopied);
-          dataCopied = false
-        }
-
-        pastes = all();
-
-        window.webContents.send("clipboard-data", {
-          pastes: pastes.map(v => v.text)
-        });
-      }
-    });
-
-    setInterval(() => {
-      let data = sort();
-
-      if (pastes.length && pastes[0].time != data[0].time) {
-        pastes = data;
-
-        if(window.isVisible()) return;
-
-        window.webContents.send("clipboard-data", {
-          pastes: pastes.map(v => v.text)
-        });
-      }
-    }, 1000);
-  });
-
-  ipcMain.on("copy-data", (event, text) => {
-    dataCopied = true;
-    clipboard.writeText(text);
-    window.webContents.send("copied-data", true);
-
-    setTimeout(() => {
-      app && app.hide()
-    }, 300)
-  });
-
-  ipcMain.on("hide-window", () => {
-    if(window && window.isVisible()) window.hide();
-  });
-
-  ipcMain.on("search-data", (event, text) => {
-    text = text.trim();
-    if (!text) {
-      window.webContents.send("clipboard-data", {
-        pastes: all().map(v => v.text)
-      });
-      return;
-    }
-
-    let data = search(text);
-    window.webContents.send("clipboard-data", {
-      pastes: data.map(v => v.text)
-    });
-  });
 };
 
 function saveClipBoardHistoryToFile(data = []) {
@@ -253,7 +190,7 @@ function saveClipBoardHistoryToFile(data = []) {
   let writeFileSync = require('fs').writeFileSync
   let path = `${dir}/.config/clippypastes`
 
-  if(data.length) writeFileSync(path, JSON.stringify(data), { encoding: 'utf8', mode: 0o600 })
+  writeFileSync(path, JSON.stringify(data), { encoding: 'utf8', mode: 0o600 })
 }
 
 function loadClipBoardHistoryFromFile() {

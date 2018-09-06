@@ -118,6 +118,11 @@ function removeFromCache(text) {
   return true
 }
 
+function resetCache(confirm) {
+  if(confirm) DATA = []
+  return DATA
+}
+
 function getAllData() {
   return DATA;
 }
@@ -130,5 +135,5 @@ module.exports = {
   all: getAllData,
   remove: removeFromCache,
   putAll: putBulkInCache,
-
+  reset: resetCache,
 }
