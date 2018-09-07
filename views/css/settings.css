@@ -1,0 +1,39 @@
+body {
+  background: #000;
+  color: #fff;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+form {
+  height: 100%;
+  font-size: 17px;
+  font-family: 'Titillium', serif;
+}
+
+label {
+  text-align: center;
+  display: block;
+  padding: 10px 0;
+}
+
+#password {
+  width: 90%;
+  border: none;
+  background: #3e3e3e;
+  padding: 2px;
+  font-size: 16px;
+  margin: 0 auto;
+  display: block;
+  color: #fff;
+  outline: none;
+}
+
+#password:focus {
+  outline: none;
+}

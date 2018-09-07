@@ -3,7 +3,6 @@ const {
 const watchClipB = require("../watchclipboard");
 const { put, search, sort, all } = require("../clips");
 
-
 let dataCopied = false; // is data copied from app
 
 module.exports = function CreateWindow(
@@ -27,12 +26,12 @@ module.exports = function CreateWindow(
     skipTaskbar: true,
     webPreferences: {
       backgroundThrottling: false,
-        devTools: true
+      //  devTools: true
     }
   });
 
   window.setVisibleOnAllWorkspaces(true)
-  window.webContents.openDevTools({ mode: 'detach'});
+  // window.webContents.openDevTools({ mode: 'detach'});
 
   // Hide the window when it loses focus
   window.on("blur", () => {

@@ -11,9 +11,16 @@ const {
   session
 } = require("electron");
 const path = require("path");
+const crypto = require('crypto');
 const components = require("./components")
 const { all, putAll, sort, reset } = require("./clips");
 const iconPath = path.join(__dirname, "rclipboard.png");
+
+const algorithm = 'aes-256-ctr';
+
+let window, swindow;
+let loadFailed = true;
+let key;
 
 if(process.platform == "darwin")
     app.dock && app.dock.hide();
@@ -61,47 +68,6 @@ const confirm = (message) => {
       message: message
     });
 }
-
-const createMenu = () => {
-  let actions = [
-    {
-      label: 'Close',
-      click() {
-        app && app.quit()
-      }
-    },
-    {
-      label: 'Clear All',
-      click() {
-        if(confirm("Are you Sure")) {
-          window.webContents.send('clipboard-data', {
-            pastes: reset(true)
-          });
-          saveClipBoardHistoryToFile([])
-        }
-      }
-    }
-  ]
-  const menu = components.CreateMenu(Menu, MenuItem, app, actions)
-
-  menu.popup({ window: window })
-}
-
-const createTray = () => {
-  tray = new Tray(iconPath);
-
-  //tray.on("right-click", () => { app && app.quit() });
-  tray.on("right-click", createMenu);
-
-  tray.on("double-click", toggleWindow);
-  tray.on("click", function(event) {
-    toggleWindow();
-
-    if (window.isVisible() && process.defaultApp && event.metaKey) {
-      window.openDevTools({ mode: "detach" });
-    }
-  });
-};
 
 const getWindowPosition = () => {
   const windowBounds = window.getBounds();
@@ -165,15 +131,81 @@ const showWindow = () => {
   window.focus();
 };
 
+const showSettingWindow = () => {
+  swindow.show()
+}
+
+const createMenu = () => {
+  let actions = [
+    {
+      label: 'Close',
+      click() {
+        app && app.quit()
+      }
+    },
+    {
+      label: 'Clear All',
+      click() {
+        if(confirm("Are you Sure")) {
+          window.webContents.send('clipboard-data', {
+            pastes: reset(true)
+          });
+          saveClipBoardHistoryToFile([], true)
+        }
+      }
+    },
+    {
+      label: 'Settings',
+      click() {
+        if(!swindow) swindow = createSettingsWindow()
+        swindow.webContents.on('dom-ready', () => {
+          if(!swindow.isVisible()) {
+            swindow.show()
+          }
+        })
+      }
+    }
+  ]
+  const menu = components.CreateMenu(Menu, MenuItem, app, actions)
+
+  menu.popup({ window: window })
+}
+
+const createTray = () => {
+  tray = new Tray(iconPath);
+
+  //tray.on("right-click", () => { app && app.quit() });
+  tray.on("right-click", createMenu);
+
+  tray.on("double-click", toggleWindow);
+  tray.on("click", function(event) {
+    toggleWindow();
+
+    if (window.isVisible() && process.defaultApp && event.metaKey) {
+      window.openDevTools({ mode: "detach" });
+    }
+  });
+};
+
+const createSettingsWindow = () => {
+  swindow = components.CreateSettingsWindow(app, window, ipcMain)
+  swindow.loadURL(`file://${path.join(__dirname, "views", "settings.html")}`);
+  swindow.on('close', () => {
+    swindow = null;
+    app.focus()
+  })
+  return swindow
+}
+
 const createWindow = () => {
-  window = components.CreateWindow(
+  if(!window) window = components.CreateWindow(
     app,
     BrowserWindow,
     ipcMain,
     clipboard,
   )
 
-  window.loadURL(`file://${path.join(__dirname, "index.html")}`);
+  window.loadURL(`file://${path.join(__dirname, "views", "index.html")}`);
   window.on('show', () => {
     let pastes = sort();
 
@@ -185,12 +217,35 @@ const createWindow = () => {
   })
 };
 
-function saveClipBoardHistoryToFile(data = []) {
+ipcMain.on('update-password', (event, password) => {
+  key = password;
+  if(loadFailed) loadClipBoardHistoryFromFile()
+});
+
+function encrypt(text, password){
+  var cipher = crypto.createCipher(algorithm, password)
+  var crypted = cipher.update(text,'utf8','hex')
+  crypted += cipher.final('hex');
+  return crypted;
+}
+
+function decrypt(text, password){
+  var decipher = crypto.createDecipher(algorithm, password)
+  var dec = decipher.update(text,'hex','utf8')
+  dec += decipher.final('utf8');
+  return dec;
+}
+
+function saveClipBoardHistoryToFile(data = [], reset=false) {
   let dir = require('os').homedir()
   let writeFileSync = require('fs').writeFileSync
   let path = `${dir}/.config/clippypastes`
 
-  writeFileSync(path, JSON.stringify(data), { encoding: 'utf8', mode: 0o600 })
+  let str = JSON.stringify(data)
+  if(key) str = encrypt(str, key)
+  if(!reset && !str) return;
+
+  writeFileSync(path, str, { encoding: 'utf8', mode: 0o600 })
 }
 
 function loadClipBoardHistoryFromFile() {
@@ -204,13 +259,33 @@ function loadClipBoardHistoryFromFile() {
       return
     }
 
-    try {
-      let pastes = putAll(JSON.parse(data))
+    if(!data.trim()) return; //empty file
 
+    let originalData;
+    // try to decrypt
+    try {
+      originalData = decrypt(data, key);
+      if(originalData.trim() == "") throw Error("FAILED_DECRYPTION")
+    } catch(e) {
+      // probably its plaintext
+      // try parsing it in plaintext JSON
+      originalData = data;
+    }
+
+    try {
+      originalData = JSON.parse(originalData)
+    } catch(e) {
+      originalData = "";
+    }
+
+    if(originalData) {
+      let pastes = putAll(originalData)
+
+      loadFailed = false;
       window.webContents.send("clipboard-data", {
         pastes: pastes.map(v => v.text)
       });
-    } catch(e) {
+    } else {
       console.log("Data Corrupted")
     }
   })
