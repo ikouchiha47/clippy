@@ -1,5 +1,6 @@
 {
   "identifier": "desktop-capability",
+  "$schema": "../gen/schemas/desktop-schema.json",
   "platforms": [
     "macOS",
     "windows",
@@ -9,6 +10,23 @@
     "main"
   ],
   "permissions": [
-    "global-shortcut:default"
+    "core:default",
+    "opener:default",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-close",
+    "core:tray:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-clear",
+    "clipboard-manager:allow-write-text",
+    "notification:allow-check-permissions",
+    "notification:allow-is-permission-granted",
+    "notification:allow-notify",
+    "notification:allow-request-permission",
+    "notification:allow-show",
+    "global-shortcut:allow-is-registered",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "core:app:allow-default-window-icon"
   ]
 }

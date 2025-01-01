@@ -1,10 +1,10 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "clippy",
-  "version": "0.1.0",
+  "version": "1.6.0",
   "identifier": "com.clippy.app",
   "build": {
-    "beforeDevCommand": "npm install -g bun && bun run dev",
+    "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
@@ -15,7 +15,8 @@
         "title": "clippy",
         "fullscreen": false,
         "width": 320,
-        "height": 640
+        "height": 640,
+        "devtools": true
       }
     ],
     "security": {
@@ -30,7 +31,7 @@
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
-      "icons/icon.ico"
+      "icons/icon.png"
     ]
   }
 }

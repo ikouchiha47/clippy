@@ -22,6 +22,7 @@
     "notification:allow-show",
     "global-shortcut:allow-is-registered",
     "global-shortcut:allow-register",
-    "global-shortcut:allow-unregister"
+    "global-shortcut:allow-unregister",
+    "core:app:allow-default-window-icon"
   ]
 }

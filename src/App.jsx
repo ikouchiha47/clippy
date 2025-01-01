@@ -3,34 +3,13 @@ import useDeepCompareEffect from 'use-deep-compare-effect'
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { TrayIcon } from '@tauri-apps/api/tray';
+import { defaultWindowIcon } from '@tauri-apps/api/app';
 import { Menu } from '@tauri-apps/api/menu';
-
-import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from '@tauri-apps/plugin-notification';
 
 import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 
 import './App.css';
 
-
-async function sendNotificationIfAllowed(message) {
-  const permissionGranted = await isPermissionGranted();
-
-  if (!permissionGranted) {
-
-    const permission = await requestPermission();
-
-    if (permission === 'granted') {
-      sendNotification(message);
-    }
-
-  } else {
-    console.log(message)
-  }
-}
 
 const GLOBAL_SHORT_PREFIX = "Shift+Alt"//"CmdOrControl+Shift"
 const KEYCODE_ENTER = 13;
@@ -72,7 +51,7 @@ function App() {
         setVisible(!visible)
         break;
       case 'quit':
-        await currentWindow.current.hide();
+        await currentWindow.current.close();
         break;
       default:
         break;
@@ -131,7 +110,7 @@ function App() {
         await copyToClipboard(list[index], index); // Copy to clipboard
         console.log(`Copied: ${list[index]}`);
       } catch (err) {
-        console.error('Failed to copy to clipboard:', err);
+        console.log('error: Failed to copy to clipboard:', err);
       }
     }
   };
@@ -146,8 +125,9 @@ function App() {
         ]
       })
 
+      console.log(await defaultWindowIcon(), "wincon")
       const tray = await TrayIcon.new({
-        icon: 'icons/icon.png',
+        icon: await defaultWindowIcon(),
         menu,
       });
 
@@ -157,8 +137,8 @@ function App() {
       return tray
 
     } catch (e) {
-      console.log("Failed to setup tray")
-      console.error(e)
+      console.log("error: Failed to setup tray")
+      console.log(e)
     }
   };
 
@@ -182,11 +162,13 @@ function App() {
       }
 
     } catch (error) {
-      console.error('Error reading clipboard:', error);
+      console.log('error: Error reading clipboard:', error);
     }
   };
 
   useEffect(async () => {
+    if (!currentWindow) return;
+
     let tray = await initializeTray();
 
     await updateClipboardHistory()
@@ -224,7 +206,7 @@ function App() {
         console.log("Registering shortcuts...");
         await registerShortcuts();
       } catch (e) {
-        console.error("Failed to register shortcuts:", e);
+        console.log("error: Failed to register shortcuts:", e);
       }
     };
 
@@ -246,10 +228,8 @@ function App() {
       rearrangedHistory = [item, ...rearrangedHistory.slice(0, index), ...rearrangedHistory.slice(index + 1)]
 
       setHistory(rearrangedHistory);
-
-      sendNotificationIfAllowed("Copied")
     } catch (e) {
-      console.error("failed to copy to clipboard"); // TODO: show error on App.jsx
+      console.log("error: failed to copy to clipboard"); // TODO: show error on App.jsx
     }
   }
 
