@@ -12,10 +12,12 @@
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-clipboard-manager": "^2.2.0",
+    "@tauri-apps/plugin-global-shortcut": "~2",
     "@tauri-apps/plugin-notification": "^2.2.0",
     "@tauri-apps/plugin-opener": "^2",
     "add": "^2.0.6",
-    "preact": "^10.25.1"
+    "preact": "^10.25.1",
+    "use-deep-compare-effect": "^1.8.1"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.9.3",

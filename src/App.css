@@ -1,3 +1,8 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
 .logo.vite:hover {
   filter: drop-shadow(0 0 2em #747bff);
 }
@@ -5,6 +10,8 @@
 .logo.preact:hover {
   filter: drop-shadow(0 0 2em #673ab8);
 }
+
+
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
@@ -21,12 +28,16 @@
   -webkit-text-size-adjust: 100%;
 }
 
+#root {
+  height: 640px;
+}
+
 .container {
   margin: 0;
-  padding-top: 10vh;
+  padding: 1.2rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  height: 100%;
 }
 
 .logo {
@@ -57,6 +68,7 @@ a:hover {
 
 h1 {
   text-align: center;
+  padding-block: 1.2rem;
 }
 
 .history {
@@ -64,6 +76,8 @@ h1 {
   overflow-y: auto;
   margin: 0;
   padding: 8px;
+  height: 360px;
+  overflow-y: auto;
 }
 
 .history li {
@@ -97,6 +111,18 @@ h1 {
 
 .search-input {
   width: 100%;
+}
+
+.notification {
+  position: absolute;
+  padding: 0.2rem;
+  background-color: yellow;
+  color: #000;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+
 }
 
 #history-size-value {
@@ -139,6 +165,10 @@ button {
   margin-right: 5px;
 }
 
+.history-item {
+  padding-left: 16px;
+}
+
 .flex {
   display: flex;
 }
@@ -153,6 +183,14 @@ button {
 
 .justify-between {
   justify-content: space-between;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-grey {
+  color: #666;
 }
 
 @media (prefers-color-scheme: dark) {

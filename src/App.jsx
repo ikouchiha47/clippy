@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
+import useDeepCompareEffect from 'use-deep-compare-effect'
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { TrayIcon } from '@tauri-apps/api/tray';
@@ -9,6 +10,8 @@ import {
   requestPermission,
   sendNotification,
 } from '@tauri-apps/plugin-notification';
+
+import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 
 import './App.css';
 
@@ -29,8 +32,14 @@ async function sendNotificationIfAllowed(message) {
   }
 }
 
+const GLOBAL_SHORT_PREFIX = "Shift+Alt"//"CmdOrControl+Shift"
 const KEYCODE_ENTER = 13;
 const KEYCODE_ESC = 27;
+
+const allowedKeys = [
+  // ...Array.from({ length: 9 }, (_, i) => `${i + 1}`), // '1-9'
+  'a', 'b', ...'defghijklmnopqrstuvwxy', 'z',
+];
 
 function App() {
   const [history, setHistory] = useState([]);
@@ -38,24 +47,11 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [historyLimit, setHistoryLimit] = useState(100);
   const [visible, setVisible] = useState(false);
+  const [copyTimeout, setCopyTimeout] = useState({});
 
   const searchRef = useRef(null);
   const currentWindow = useRef(null);
-
-  // Function to update clipboard history
-  const updateClipboardHistory = async () => {
-    try {
-      const currentClipboard = (await readText()).trimEnd();
-
-      if (currentClipboard && !history.includes(currentClipboard)) {
-        const newHistory = [currentClipboard, ...history];
-        if (newHistory.length > historyLimit) newHistory.pop();
-        setHistory(newHistory);
-      }
-    } catch (error) {
-      console.error('Error reading clipboard:', error);
-    }
-  };
+  const historyRef = useRef(history);
 
   // Function to handle system tray menu item clicks
   const handleTrayClick = async (itemId) => {
@@ -80,6 +76,55 @@ function App() {
     }
   };
 
+  const registerShortcuts = async () => {
+    let futures = []
+    for (const key of allowedKeys) {
+      const shortCutKey = `${GLOBAL_SHORT_PREFIX}+${key}`
+      futures.push(register(shortCutKey, () => handleShortcut(key)))
+    }
+
+    await Promise.all(futures)
+  };
+
+  const copyToClipboard = async (text) => {
+    text = text.trim();
+    if (!text) return
+
+    await writeText(text)
+    if (copyTimeout) {
+      clearTimeout(copyTimeout)
+    }
+
+    let timeout = setTimeout(() => {
+      setCopyTimeout(null);
+    }, 2000)
+
+    setCopyTimeout(timeout)
+    clearTimeout(timeout);
+  }
+
+  const handleShortcut = async (key) => {
+    let index;
+
+    // Map keys to indices
+    if (allowedKeys.includes(key)) {
+      index = allowedKeys.indexOf(key) - 9; // Convert 'a-z' to index
+    } else {
+      return; // Unsupported key
+    }
+
+    const list = isSearching ? filteredList : history;
+    if (index >= 0 && index < list.length) {
+      try {
+        await copyToClipboard(list[index]); // Copy to clipboard
+        console.log(`Copied: ${list[index]}`);
+      } catch (err) {
+        console.error('Failed to copy to clipboard:', err);
+      }
+    }
+  };
+
+
   const initializeTray = async () => {
     try {
       const menu = await Menu.new({
@@ -92,9 +137,6 @@ function App() {
       const tray = await TrayIcon.new({
         icon: 'icons/icon.png',
         menu,
-        action: (event) => {
-          console.log("event", event.type)
-        }
       });
 
       currentWindow.current = getCurrentWindow()
@@ -108,30 +150,82 @@ function App() {
     }
   };
 
+  const updateClipboardHistory = async (historyRef, setHistory) => {
+    try {
+      const currentClipboard = (await readText()).trimEnd();
+      //
+      // console.log("current", 
+      //   currentClipboard, 
+      //   historyRef.current, 
+      //   currentClipboard && !historyRef.current.includes(currentClipboard))
+
+      if (!historyRef) return;
+
+      if (currentClipboard && !historyRef.current.includes(currentClipboard)) {
+        const newHistory = [currentClipboard, ...historyRef.current];
+        if (newHistory.length > historyLimit) newHistory.pop();
+
+        setHistory(newHistory);
+        historyRef.current = newHistory;
+      }
+
+    } catch (error) {
+      console.error('Error reading clipboard:', error);
+    }
+  };
+
   useEffect(async () => {
     let tray = await initializeTray();
-    // console.log("get tray", tray) 
+
+    await updateClipboardHistory()
 
     return () => {
       TrayIcon.removeById(tray.id)
     }
   }, [])
 
-  useEffect(() => {
-    const intervalId = setInterval(updateClipboardHistory, 1000);
+  useDeepCompareEffect(() => {
+    historyRef.current = history;
+  }, [history]);
+
+  useEffect(async () => {
+    const intervalId = setInterval(() => {
+      updateClipboardHistory(historyRef, setHistory);
+    }, 1000);
 
     return () => {
       clearInterval(intervalId);
+    }
+
+  }, [])
+
+  useEffect(() => {
+    const setupShortcuts = async () => {
+      try {
+        console.log("Registering shortcuts...");
+        await registerShortcuts();
+      } catch (e) {
+        console.error("Failed to register shortcuts:", e);
+      }
     };
-  }, [history]);
+
+    setupShortcuts();
+
+    return () => {
+      console.log("Unregistering shortcuts...");
+      unregisterAll();
+    };
+  }, []);
+
 
   const handleCopySelected = async (e, item, index) => {
     e.preventDefault();
 
     try {
-      await writeText(item)
+      await copyToClipboard(item)
       let rearrangedHistory = [...history]
       rearrangedHistory = [item, ...rearrangedHistory.slice(0, index), ...rearrangedHistory.slice(index + 1)]
+
       setHistory(rearrangedHistory);
 
       sendNotificationIfAllowed("Copied")
@@ -147,6 +241,7 @@ function App() {
 
     if (e.keyCode == KEYCODE_ESC || item.length < 3) {
       setIsSearching(false);
+      setFilteredList([]);;
       searchRef.current.value = ""
 
       return;
@@ -159,13 +254,18 @@ function App() {
     setSearchedItems(filteredItems);
   }
 
-
   const renderHistory = (thisHistory) => {
     return (
       <ul className='history'>
         {
           thisHistory.map((item, index) => (
-            <li key={index} onClick={async (e) => await handleCopySelected(e, item, index)}>{item}</li>
+            <li
+              className='flex flex-row'
+              key={index}
+              onClick={async (e) => await handleCopySelected(e, item, index)}>
+              <span className='text-grey'>{allowedKeys[index]}</span>
+              <span className='history-item'>{item}</span>
+            </li>
           ))
         }
       </ul>
@@ -173,7 +273,7 @@ function App() {
   }
 
   return (
-    <div>
+    <div className='container'>
       <h1>Clipboard History</h1>
       <div className='history-size flex flex-row justify-between align-center'>
         <label htmlFor='size'>History Limit</label>
@@ -193,7 +293,9 @@ function App() {
           onKeyUp={handleHistorySearch}
         />
       </div>
+      <p className='text-center text-grey' style={{ paddingBlock: '0.4rem' }}>{GLOBAL_SHORT_PREFIX}</p>
       {isSearching ? renderHistory(searchedItems) : renderHistory(history)}
+      {copyTimeout ? <p className='notification'>Copied</p> : <></>}
     </div>
   );
 }
