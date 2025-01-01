@@ -34,7 +34,7 @@
 
 .container {
   margin: 0;
-  padding: 1.2rem;
+  padding: 1.2rem 1rem;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -95,7 +95,7 @@ h1 {
     ease-out;
 }
 
-.history li:hover {
+.history li.hover, .history li:hover{
   background-color: yellow;
   color: #000;
   max-height: max-content;

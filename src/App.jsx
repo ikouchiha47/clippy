@@ -44,10 +44,11 @@ const allowedKeys = [
 function App() {
   const [history, setHistory] = useState([]);
   const [searchedItems, setSearchedItems] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
   const [historyLimit, setHistoryLimit] = useState(100);
   const [visible, setVisible] = useState(false);
-  const [copyTimeout, setCopyTimeout] = useState({});
+  const [copyTimeout, setCopyTimeout] = useState(null);
 
   const searchRef = useRef(null);
   const currentWindow = useRef(null);
@@ -86,7 +87,7 @@ function App() {
     await Promise.all(futures)
   };
 
-  const copyToClipboard = async (text) => {
+  const copyToClipboard = async (text, index) => {
     text = text.trim();
     if (!text) return
 
@@ -96,27 +97,33 @@ function App() {
     }
 
     let timeout = setTimeout(() => {
-      setCopyTimeout(null);
-    }, 2000)
+      clearTimeout(timeout)
+      setCopyTimeout(null)
+      setSelectedIndex(-1)
+    }, 360)
 
     setCopyTimeout(timeout)
-    clearTimeout(timeout);
+    setSelectedIndex(index);
+
   }
 
   const handleShortcut = async (key) => {
-    let index;
+    let index = 0;
+
+    console.log("key...", key);
 
     // Map keys to indices
     if (allowedKeys.includes(key)) {
-      index = allowedKeys.indexOf(key) - 9; // Convert 'a-z' to index
+      index = allowedKeys.indexOf(key); // Convert 'a-z' to index
     } else {
       return; // Unsupported key
     }
 
-    const list = isSearching ? filteredList : history;
+    const list = isSearching ? filteredList : historyRef.current;
+    console.log("list", list, index, list.length)
     if (index >= 0 && index < list.length) {
       try {
-        await copyToClipboard(list[index]); // Copy to clipboard
+        await copyToClipboard(list[index], index); // Copy to clipboard
         console.log(`Copied: ${list[index]}`);
       } catch (err) {
         console.error('Failed to copy to clipboard:', err);
@@ -211,9 +218,9 @@ function App() {
 
     setupShortcuts();
 
-    return () => {
+    return async () => {
       console.log("Unregistering shortcuts...");
-      unregisterAll();
+      await unregisterAll();
     };
   }, []);
 
@@ -222,7 +229,7 @@ function App() {
     e.preventDefault();
 
     try {
-      await copyToClipboard(item)
+      await copyToClipboard(item, index)
       let rearrangedHistory = [...history]
       rearrangedHistory = [item, ...rearrangedHistory.slice(0, index), ...rearrangedHistory.slice(index + 1)]
 
@@ -260,7 +267,7 @@ function App() {
         {
           thisHistory.map((item, index) => (
             <li
-              className='flex flex-row'
+              className={`flex flex-row ${copyTimeout && selectedIndex == index ? 'hover' : ''}`}
               key={index}
               onClick={async (e) => await handleCopySelected(e, item, index)}>
               <span className='text-grey'>{allowedKeys[index]}</span>
