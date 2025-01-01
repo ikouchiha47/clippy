@@ -1,0 +1,7 @@
+[[permissions]]
+identifier = "clipboard-manager"
+description = """This enables clipboard read and clear"""
+commands.allow = [
+	"allow-read-text",
+	"allow-clear"
+]
