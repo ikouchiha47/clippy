@@ -9,6 +9,7 @@
     "core:default",
     "opener:default",
     "core:window:allow-hide",
+    "core:window:allow-show",
     "core:window:allow-close",
     "core:tray:default",
     "clipboard-manager:allow-read-text",

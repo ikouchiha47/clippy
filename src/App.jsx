@@ -99,7 +99,7 @@ function App() {
 
       currentWindow.current = getCurrentWindow()
 
-      // currentWindow.current.hide()
+      currentWindow.current.hide()
       return tray
 
     } catch (e) {
