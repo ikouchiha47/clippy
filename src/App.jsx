@@ -53,6 +53,8 @@ function App() {
   const searchRef = useRef(null);
   const currentWindow = useRef(null);
   const historyRef = useRef(history);
+  const searchOnRef = useRef(isSearching);
+  const searchItemsRef = useRef(searchedItems);
 
   // Function to handle system tray menu item clicks
   const handleTrayClick = async (itemId) => {
@@ -110,17 +112,20 @@ function App() {
   const handleShortcut = async (key) => {
     let index = 0;
 
-    console.log("key...", key);
-
     // Map keys to indices
     if (allowedKeys.includes(key)) {
       index = allowedKeys.indexOf(key); // Convert 'a-z' to index
     } else {
-      return; // Unsupported key
+      return;
     }
 
-    const list = isSearching ? filteredList : historyRef.current;
-    console.log("list", list, index, list.length)
+    const list = searchOnRef && searchOnRef.current ? searchItemsRef.current : historyRef.current;
+    // console.log("list", 
+    // searchOnRef.current, 
+    // searchedItems, 
+    // searchItemsRef.current, 
+    // index)
+
     if (index >= 0 && index < list.length) {
       try {
         await copyToClipboard(list[index], index); // Copy to clipboard
@@ -186,14 +191,21 @@ function App() {
 
     await updateClipboardHistory()
 
-    return () => {
-      TrayIcon.removeById(tray.id)
+    return async () => {
+      await TrayIcon.removeById(tray.id)
     }
   }, [])
 
   useDeepCompareEffect(() => {
     historyRef.current = history;
   }, [history]);
+
+  useEffect(() => {
+    if (!searchOnRef) return;
+    if (searchOnRef.current == isSearching) return;
+
+    searchOnRef.current = isSearching
+  }, [isSearching])
 
   useEffect(async () => {
     const intervalId = setInterval(() => {
@@ -245,20 +257,20 @@ function App() {
     e.preventDefault();
 
     let item = searchRef.current && searchRef.current.value.trim();
+    // console.log("item", item, item.length)
 
     if (e.keyCode == KEYCODE_ESC || item.length < 3) {
-      setIsSearching(false);
-      setFilteredList([]);;
-      searchRef.current.value = ""
+      if (isSearching) setIsSearching(false);
+      if (searchedItems.length) setSearchedItems([]);
 
       return;
     }
 
-    setIsSearching(true);
+    if (!isSearching) setIsSearching(true);
 
     let filteredItems = history.filter(msg => msg.search(item) > -1)
-
     setSearchedItems(filteredItems);
+    searchItemsRef.current = filteredItems;
   }
 
   const renderHistory = (thisHistory) => {
