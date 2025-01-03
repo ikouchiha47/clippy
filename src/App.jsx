@@ -10,7 +10,6 @@ import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 
 import './App.css';
 
-
 const GLOBAL_SHORT_PREFIX = "Shift+Alt"//"CmdOrControl+Shift"
 const KEYCODE_ENTER = 13;
 const KEYCODE_ESC = 27;
@@ -45,7 +44,7 @@ function App() {
           await currentWindow.current.hide()
         } else {
 
-          await currentWindow.current.show()
+          await bringFront(currentWindow.current)
         }
 
         setVisible(!visible)
@@ -58,11 +57,33 @@ function App() {
     }
   };
 
+  const bringFront = async (currWindow) => {
+    await currWindow.show()
+    await currentWindow.setFocus()
+  }
+
   const registerShortcuts = async () => {
+    // global shortcut
+
+    await register("CommandOrControl+Shift+K", async (e) => {
+      console.log("shortcutRegistered", e)
+      if (e.state === "Pressed") return;
+
+      let currWindow = currentWindow && currentWindow.current;
+      // let currWindow = getCurrentWindow();
+      let isVisible = await currWindow.isVisible()
+      if (isVisible) {
+        await currWindow.hide()
+        return
+      }
+
+      await bringFront(currWindow);
+    })
+
     let futures = []
     for (const key of allowedKeys) {
       const shortCutKey = `${GLOBAL_SHORT_PREFIX}+${key}`
-      futures.push(register(shortCutKey, () => handleShortcut(key)))
+      futures.push(register(shortCutKey, (e) => handleShortcut(e, key)))
     }
 
     await Promise.all(futures)
@@ -88,7 +109,9 @@ function App() {
 
   }
 
-  const handleShortcut = async (key) => {
+  const handleShortcut = async (e, key) => {
+    if (e.state === "Pressed") return;
+
     let index = 0;
 
     // Map keys to indices
