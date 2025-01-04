@@ -5,6 +5,7 @@ import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { TrayIcon } from '@tauri-apps/api/tray';
 import { defaultWindowIcon } from '@tauri-apps/api/app';
 import { Menu } from '@tauri-apps/api/menu';
+import { invoke } from '@tauri-apps/api/core';
 
 import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 
@@ -19,6 +20,31 @@ const allowedKeys = [
   'a', 'b', ...'defghijklmnopqrstuvwxy', 'z',
 ];
 
+const Config = {
+  saveFileName: '/tmp/clippyhistory',
+  syncTimeIntervalMs: 1000 * 60,
+  longSyncTime: 1000 * 60 * 60 * 2,
+}
+
+async function saveHistory(history, fileName) {
+  if (history.length == 0) return;
+
+  const data = JSON.stringify(history);
+  await invoke('save_to_file', { data, fileName })
+  return true
+}
+
+async function loadHistory(fileName) {
+  let dataStr = await invoke('load_from_file', { fileName });
+  if (dataStr == "") return [];
+
+  try {
+    return JSON.parse(dataStr);
+  } catch (e) {
+    return [];
+  }
+}
+
 function App() {
   const [history, setHistory] = useState([]);
   const [searchedItems, setSearchedItems] = useState([]);
@@ -27,12 +53,44 @@ function App() {
   const [historyLimit, setHistoryLimit] = useState(100);
   const [visible, setVisible] = useState(false);
   const [copyTimeout, setCopyTimeout] = useState(null);
+  const [lastSyncTime, setLastSyncTime] = useState(Date.now())
 
   const searchRef = useRef(null);
   const currentWindow = useRef(null);
   const historyRef = useRef(history);
   const searchOnRef = useRef(isSearching);
   const searchItemsRef = useRef(searchedItems);
+
+  const getState = () => {
+    return (historyRef && historyRef.current) || []
+  }
+
+  const bringFront = async (currWindow) => {
+    await currWindow.show()
+    await currWindow.setFocus()
+  }
+
+  const hideWindow = async (currWindow, fnKey) => {
+    if ((Date.now() - lastSyncTime) >= Config.syncTimeIntervalMs)
+      await saveHistory(getState(), Config.saveFileName)
+
+    currWindow[fnKey] ? await currWindow[fnKey]() : await Promise.reject("")
+  }
+
+  const beforeFunc = async (innerFn, wrapperFn) => {
+    return async (innerArgs) => {
+      await innerFn(innerArgs)
+
+      return wrapperFn
+    }
+  }
+
+  const watchAndSaveHistory = async () => {
+    return setInterval(async () => {
+      await saveHistory(getState(), Config.saveFileName)
+    }, Config.longSyncTime) // every 2 hours
+  }
+
 
   // Function to handle system tray menu item clicks
   const handleTrayClick = async (itemId) => {
@@ -41,39 +99,32 @@ function App() {
     switch (itemId) {
       case 'show_history':
         if (visible) {
-          await currentWindow.current.hide()
+          await hideWindow(currentWindow.current, 'hide')
         } else {
-
           await bringFront(currentWindow.current)
         }
 
         setVisible(!visible)
         break;
       case 'quit':
-        await currentWindow.current.close();
+        await hideWindow(currentWindow.current, 'close')
         break;
       default:
         break;
     }
   };
 
-  const bringFront = async (currWindow) => {
-    await currWindow.show()
-    await currWindow.setFocus()
-  }
-
   const registerShortcuts = async () => {
     // global shortcut
 
     await register("CommandOrControl+Shift+K", async (e) => {
-      console.log("shortcutRegistered", e)
       if (e.state === "Pressed") return;
 
       let currWindow = currentWindow && currentWindow.current;
       // let currWindow = getCurrentWindow();
       let isVisible = await currWindow.isVisible()
       if (isVisible) {
-        await currWindow.hide()
+        await hideWindow(currWindow, 'hide')
         return
       }
 
@@ -148,7 +199,6 @@ function App() {
         ]
       })
 
-      console.log(await defaultWindowIcon(), "wincon")
       const tray = await TrayIcon.new({
         icon: await defaultWindowIcon(),
         menu,
@@ -194,6 +244,11 @@ function App() {
 
     let tray = await initializeTray();
 
+    try {
+      let savedHistory = await loadHistory(Config.saveFileName)
+      setHistory(savedHistory)
+    } catch (e) { }
+
     await updateClipboardHistory()
 
     return async () => {
@@ -217,8 +272,11 @@ function App() {
       updateClipboardHistory(historyRef, setHistory);
     }, 1000);
 
+    const syncSaveTicker = watchAndSaveHistory()
+
     return () => {
       clearInterval(intervalId);
+      clearInterval(syncSaveTicker)
     }
 
   }, [])
