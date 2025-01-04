@@ -59,7 +59,7 @@ function App() {
 
   const bringFront = async (currWindow) => {
     await currWindow.show()
-    await currentWindow.setFocus()
+    await currWindow.setFocus()
   }
 
   const registerShortcuts = async () => {
