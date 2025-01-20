@@ -51,7 +51,7 @@ function App() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isSearching, setIsSearching] = useState(false);
   const [historyLimit, setHistoryLimit] = useState(100);
-  const [visible, setVisible] = useState(false);
+  // const [visible, setVisible] = useState(false);
   const [copyTimeout, setCopyTimeout] = useState(null);
   const [lastSyncTime, setLastSyncTime] = useState(Date.now())
 
@@ -66,8 +66,15 @@ function App() {
   }
 
   const bringFront = async (currWindow) => {
-    await currWindow.show()
-    await currWindow.setFocus()
+    try {
+      await currWindow.setVisibleOnAllWorkspaces(true)
+      await currWindow.show()
+      await currWindow.setFocus()
+    } catch (e) {
+      console.log("fuggg", e)
+    } finally {
+      await currWindow.show()
+    }
   }
 
   const hideWindow = async (currWindow, fnKey) => {
@@ -96,6 +103,8 @@ function App() {
   const handleTrayClick = async (itemId) => {
     if (!currentWindow.current) return;
 
+    let visible = await currentWindow.isVisible();
+
     switch (itemId) {
       case 'show_history':
         if (visible) {
@@ -104,7 +113,7 @@ function App() {
           await bringFront(currentWindow.current)
         }
 
-        setVisible(!visible)
+        // setVisible(!visible)
         break;
       case 'quit':
         await hideWindow(currentWindow.current, 'close')
@@ -202,11 +211,13 @@ function App() {
       const tray = await TrayIcon.new({
         icon: await defaultWindowIcon(),
         menu,
+        menuOnLeftClick: true,
       });
 
       currentWindow.current = getCurrentWindow()
 
-      currentWindow.current.hide()
+      await currentWindow.current.hide()
+
       return tray
 
     } catch (e) {
@@ -320,11 +331,15 @@ function App() {
     let item = searchRef.current && searchRef.current.value.trim();
     // console.log("item", item, item.length)
 
-    if (e.keyCode == KEYCODE_ESC || item.length < 3) {
+    if (item.length < 3) {
       if (isSearching) setIsSearching(false);
       if (searchedItems.length) setSearchedItems([]);
 
       return;
+    }
+
+    if (e.keyCode == KEYCODE_ESC) {
+      searchRef.current.blur();
     }
 
     if (!isSearching) setIsSearching(true);

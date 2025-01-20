@@ -12,6 +12,7 @@
     "core:window:allow-show",
     "core:window:allow-close",
     "core:window:allow-set-focus",
+    "core:window:allow-set-visible-on-all-workspaces",
     "core:tray:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-clear",
